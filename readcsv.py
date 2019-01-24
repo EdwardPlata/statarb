@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 import sys
 
 cnt = 0
@@ -12,5 +13,5 @@ for line in sys.stdin:
     else:
         ii = 0
         for item in line.split(","):
-            print "{} : {}".format(keys[ii], item)
+            print("{} : {}".format(keys[ii], item))
             ii += 1

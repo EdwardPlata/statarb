@@ -1,16 +1,17 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from alphacalc import *
 
 from dateutil import parser as dateparser
 
 def calc_hl_daily(full_df, horizon):
-    print "Caculating daily hl..."
+    print("Caculating daily hl...")
     result_df = full_df.reset_index()
     result_df = filter_expandable(result_df)
     result_df = result_df[ ['close', 'high', 'low', 'date', 'ind1', 'sid' ]]
 
-    print "Calculating hl0..."
+    print("Calculating hl0...")
     result_df['hl0'] = result_df['close'] / np.sqrt(result_df['high'] * result_df['low'])
     result_df['hl0_B'] = winsorize(result_df['hl0'])
 
@@ -19,7 +20,7 @@ def calc_hl_daily(full_df, horizon):
     result_df['hl0_B_ma'] = indgroups['hl0_B']
     result_df.set_index(keys=['date', 'sid'], inplace=True)
     
-    print "Calulating lags..."
+    print("Calulating lags...")
     for lag in range(1,horizon):
         shift_df = result_df.unstack().shift(lag).stack()
         result_df['hl'+str(lag)+'_B_ma'] = shift_df['hl0_B_ma']
@@ -29,17 +30,17 @@ def calc_hl_daily(full_df, horizon):
     return result_df
 
 def calc_hl_intra(full_df):
-    print "Calculating hl intra..."
+    print("Calculating hl intra...")
     result_df = full_df.reset_index()
     result_df = filter_expandable(result_df)
     result_df = result_df[ ['iclose_ts', 'iclose', 'dhigh', 'dlow', 'date', 'ind1', 'sid' ] ]
     result_df = result_df.dropna(how='any')
 
-    print "Calulating hlC..."
+    print("Calulating hlC...")
     result_df['hlC'] = result_df['iclose'] / np.sqrt(result_df['dhigh'] * result_df['dlow'])
     result_df['hlC_B'] = winsorize(result_df['hlC'])
 
-    print "Calulating hlC_ma..."
+    print("Calulating hlC_ma...")
     demean = lambda x: (x - x.mean())
     indgroups = result_df[['hlC_B', 'iclose_ts', 'ind1']].groupby(['iclose_ts', 'ind1'], sort=False).transform(demean)
     result_df['hlC_B_ma'] = indgroups['hlC_B']
@@ -47,7 +48,7 @@ def calc_hl_intra(full_df):
     #important for keeping NaTs out of the following merge
     del result_df['date']
 
-    print "Merging..."
+    print("Merging...")
     result_df.set_index(keys=['iclose_ts', 'sid'], inplace=True)
     result_df = pd.merge(full_df, result_df, how='left', left_index=True, right_index=True, sort=True, suffixes=['_dead', ''])
     result_df = remove_dup_cols(result_df)
@@ -68,7 +69,7 @@ def hl_fits(daily_df, intra_df, full_df, horizon, name):
     coef0 = fits_df.ix['hl0_B_ma'].ix[horizon].ix['coef']
 
     if 'hl' not in full_df.columns:
-        print "Creating forecast columns..."
+        print("Creating forecast columns...")
         full_df['hl'] = np.nan
         full_df[ 'hlC_B_ma_coef' ] = np.nan
         for lag in range(0, horizon+1):
@@ -93,12 +94,12 @@ def calc_hl_forecast(daily_df, intra_df, horizon):
     full_df = merge_intra_data(daily_df, intra_df)
 
     sector_name = 'Energy'
-    print "Running hl for sector {}".format(sector_name)
+    print("Running hl for sector {}".format(sector_name))
     sector_df = daily_df[ daily_df['sector_name'] == sector_name ]
     sector_intra_df = intra_df[ intra_df['sector_name'] == sector_name ]
     full_df = hl_fits(sector_df, sector_intra_df, full_df, horizon, "in")
 
-    print "Running hl for sector {}".format(sector_name)
+    print("Running hl for sector {}".format(sector_name))
     sector_df = daily_df[ daily_df['sector_name'] != sector_name ]
     sector_intra_df = intra_df[ intra_df['sector_name'] != sector_name ]
     full_df = hl_fits(sector_df, sector_intra_df, full_df, horizon, "ex")

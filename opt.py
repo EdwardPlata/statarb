@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import sys
 import numpy
 import math
 import openopt
 
 import util
+
+try:
+    xrange          # Python 2
+except NameError:
+    xrange = range  # Python 3
 
 max_sumnot = 50.0e6
 max_expnot = 0.048
@@ -80,16 +86,16 @@ class Terminator():
         prev = -min(self.objValues[0:(-self.lookback -1)])
         
         if numpy.isinf(prev):
-            print "Haven't found a feasible point yet"
+            print("Haven't found a feasible point yet")
             return False
         elif numpy.isinf(curr):
-            print "We are probably diverging, but we are staying the course for a huge comeback"
+            print("We are probably diverging, but we are staying the course for a huge comeback")
             return False
         
         if self.iter % 10 == 0:
-            print "Current improvement after {} iterations is {}".format(self.lookback, float(curr-prev))
+            print("Current improvement after {} iterations is {}".format(self.lookback, float(curr-prev)))
         if curr - prev < self.stopThreshold:
-            print "Current improvement after {} iterations is {}".format(self.lookback, float(curr-prev))
+            print("Current improvement after {} iterations is {}".format(self.lookback, float(curr-prev)))
             return True
         else:
             return False
@@ -112,9 +118,9 @@ def printinfo(target, kappa, slip_gamma, slip_nu,positions, mu, rvar, factors, f
         else:
             tshort-=target[ii]
         diff+=abs(target[ii]-positions[ii])
-    print "[CURRENT] Long: {:.0f}, Short: {:.0f}, Total: {:.0f}".format(clong,cshort,clong+cshort)
-    print "[TARGET]  Long: {:.0f}, Short: {:.0f}, Total: {:.0f}".format(tlong,tshort,tlong+tshort)
-    print "Dollars traded: {:.0f}".format(diff)
+    print("[CURRENT] Long: {:.0f}, Short: {:.0f}, Total: {:.0f}".format(clong,cshort,clong+cshort))
+    print("[TARGET]  Long: {:.0f}, Short: {:.0f}, Total: {:.0f}".format(tlong,tshort,tlong+tshort))
+    print("Dollars traded: {:.0f}".format(diff))
     __printpointinfo("Current",positions,  kappa, slip_gamma, slip_nu, positions, mu, rvar, factors, fcov, advp, advpt, vol, mktcap, brate, price, execFee, untradeable_info)
     __printpointinfo("Optimum",target,  kappa, slip_gamma, slip_nu, positions, mu, rvar, factors, fcov, advp, advpt, vol, mktcap, brate, price, execFee, untradeable_info)
 
@@ -128,7 +134,7 @@ def __printpointinfo(name,target, kappa, slip_gamma, slip_nu, positions, mu, rva
     utility4 = costsFunc(target, positions, brate, price, execFee)
     var = kappa * numpy.dot(target * rvar, target)
     covar = kappa * numpy.dot(numpy.dot(loadings, fcov), loadings)
-    print "@{}: total={:.0f}, mu={:.0f}, risk={:.0f}, slip={:.2f}, costs={:.2f}, ratio={:.3f}, var={:.0f}, covar={:.0f}".format(name,utility1-utility2-utility3-utility4, utility1,utility2,utility3,utility4,utility1/utility2, var, covar)
+    print("@{}: total={:.0f}, mu={:.0f}, risk={:.0f}, slip={:.2f}, costs={:.2f}, ratio={:.3f}, var={:.0f}, covar={:.0f}".format(name,utility1-utility2-utility3-utility4, utility1,utility2,utility3,utility4,utility1/utility2, var, covar))
 
 def slippageFuncAdv(target, positions, advp, advpt, vol, mktcap, slip_gamma, slip_nu):
     newpos_abs = abs(target-positions)
@@ -304,7 +310,7 @@ def optimize():
     g_params = [kappa, slip_gamma, slip_nu, g_positions, g_mu, g_rvar, g_factors, g_fcov, g_advp, g_advpt, g_vol, g_mktcap, g_borrowRate, g_price, execFee, (0.0,0.0, numpy.zeros_like(untradeable_loadings))]
     
     if (r.stopcase == -1 or r.isFeasible == False):
-        print objective_detail(target, *g_params)
+        print(objective_detail(target, *g_params))
         raise Exception("Optimization failed")
 
     #the target is the zipping of the opt result and the untradeable securities

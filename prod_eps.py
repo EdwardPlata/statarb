@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from regress import *
 from load_data_live import *
 from loaddata import *
@@ -11,16 +12,16 @@ def wavg(group):
     b = group['pbeta']
     d = group['log_ret']
     w = group['mkt_cap_y'] / 1e6
-    print "Mkt return: {} {}".format(group['gdate'], ((d * w).sum() / w.sum()))
+    print("Mkt return: {} {}".format(group['gdate'], ((d * w).sum() / w.sum())))
     res = b * ((d * w).sum() / w.sum())
     return res
 
 
 def calc_eps_daily(daily_df, horizon):
-    print "Caculating daily eps..."
+    print("Caculating daily eps...")
     result_df = filter_expandable(daily_df)
 
-    print "Calculating eps0..."    
+    print("Calculating eps0...")    
     #halflife = horizon / 2
 #    result_df['dk'] = np.exp( -1.0 * halflife *  (result_df['gdate'] - result_df['last']).astype('timedelta64[D]').astype(int) )
 
@@ -71,12 +72,12 @@ def generate_coefs(daily_df, horizon, name, coeffile=None):
     fits_df.set_index(keys=['indep', 'horizon'], inplace=True)    
 
     coef0 = fits_df.ix['eps0_ma'].ix[horizon].ix['coef']
-    print "Coef{}: {}".format(0, coef0)               
+    print("Coef{}: {}".format(0, coef0))               
     coef_list = list()
     coef_list.append( { 'name': 'eps0_ma_coef', 'coef': coef0 } )
     for lag in range(1,horizon):
         coef = coef0 - fits_df.ix['eps0_ma'].ix[lag].ix['coef'] 
-        print "Coef{}: {}".format(lag, coef)
+        print("Coef{}: {}".format(lag, coef))
         coef_list.append( { 'name': 'eps' + str(lag) + '_ma_coef', 'coef': coef } )
 
     coef_df = pd.DataFrame(coef_list)
@@ -85,23 +86,23 @@ def generate_coefs(daily_df, horizon, name, coeffile=None):
     return 
 
 def eps_alpha(daily_df, horizon, name, coeffile):
-    print "Loading coeffile: {}".format(coeffile)
+    print("Loading coeffile: {}".format(coeffile))
     coef_df = pd.read_csv(coeffile, header=0, index_col=['name'])
     outsample_daily_df = daily_df
     outsample_daily_df['eps'] = 0.0
 
     coef0 = coef_df.ix['eps0_ma_coef'].ix['coef']
-    print "Coef{}: {}".format(0, coef0)               
+    print("Coef{}: {}".format(0, coef0))               
     outsample_daily_df[ 'eps0_ma_coef' ] = coef0
     for lag in range(0,horizon):
         coef = coef_df.ix[ 'eps'+str(lag)+'_ma_coef' ].ix['coef']
         outsample_daily_df[ 'eps'+str(lag)+'_ma_coef' ] = coef
 
     outsample_daily_df[ 'eps' ] = (outsample_daily_df['eps0_ma'].fillna(0) * outsample_daily_df['eps0_ma_coef']).fillna(0)
-    print outsample_daily_df['eps'].describe()
+    print(outsample_daily_df['eps'].describe())
     for lag in range(1,horizon):
         outsample_daily_df[ 'eps'] += (outsample_daily_df['eps'+str(lag)+'_ma'].fillna(0) * outsample_daily_df['eps'+str(lag)+'_ma_coef']).fillna(0)
-        print outsample_daily_df['eps'].describe()
+        print(outsample_daily_df['eps'].describe())
     
     return outsample_daily_df
 
@@ -135,20 +136,20 @@ if __name__=="__main__":
     end = datetime.strptime(args.asof, "%Y%m%d")
 
     if args.fit:
-        print "Fitting..."
+        print("Fitting...")
         coeffile = args.coeffile + "/" + args.asof + ".eps.csv"
         lookback = timedelta(days=720)    
         start = end - lookback
         uni_df = get_uni(start, end, 30)
     else:
-        print "Not fitting..."
+        print("Not fitting...")
         coeffile = args.coeffile
         lookback = timedelta(days=horizon+5)    
         start = end - lookback
         uni_df = load_live_file(args.inputfile)
         end = datetime.strptime(args.asof + '_' + uni_df['time'].min(), '%Y%m%d_%H:%M:%S')
     
-    print "Running between {} and {}".format(start, end)
+    print("Running between {} and {}".format(start, end))
 
     BARRA_COLS = ['ind1', 'pbeta']
     barra_df = load_barra(uni_df, start, end, BARRA_COLS)

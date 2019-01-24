@@ -1,22 +1,23 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from alphacalc import *
 
 from dateutil import parser as dateparser
 
 def calc_bd_intra(intra_df):
-    print "Calculating bd1 intra..."
+    print("Calculating bd1 intra...")
 
     result_df = intra_df.reset_index()
     result_df = filter_expandable(result_df)
     result_df = result_df[ [ 'iclose', 'iclose_ts', 'bidHitDollars', 'midHitDollars', 'askHitDollars', 'date', 'ind1', 'sid' ] ]
     result_df = result_df.dropna(how='any')
 
-    print "Calulating bd1..."
+    print("Calulating bd1...")
     result_df['bd1'] = (result_df['askHitDollars'].diff() - result_df['bidHitDollars'].diff()) / (result_df['askHitDollars'].diff() + result_df['midHitDollars'].diff() + result_df['bidHitDollars'].diff())
     result_df['bd1_B'] = winsorize(result_df['bdC'])
 
-    print "Calulating bdC_ma..."
+    print("Calulating bdC_ma...")
     demean = lambda x: (x - x.mean())
     indgroups = result_df[['bdC_B', 'date', 'ind1']].groupby(['date', 'ind1'], sort=False).transform(demean)
     result_df['bdC_B_ma'] = indgroups['bdC_B']
@@ -24,7 +25,7 @@ def calc_bd_intra(intra_df):
     #important for keeping NaTs out of the following merge
     del result_df['date']
 
-    print "Merging..."
+    print("Merging...")
     result_df.set_index(keys=['iclose_ts', 'sid'], inplace=True)
     result_df = pd.merge(intra_df, result_df, how='left', left_index=True, right_index=True, sort=True, suffixes=['_dead', ''])
     result_df = remove_dup_cols(result_df)
