@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from regress import *
 from load_data_live import *
 from loaddata import *
@@ -13,16 +14,16 @@ def wavg(group):
     b = group['pbeta']
     d = group['log_ret']
     w = group['mkt_cap_y'] / 1e6
-    print "Mkt return: {} {}".format(group['gdate'], ((d * w).sum() / w.sum()))
+    print("Mkt return: {} {}".format(group['gdate'], ((d * w).sum() / w.sum())))
     res = b * ((d * w).sum() / w.sum())
     return res
 
 
 def calc_sal_daily(daily_df, horizon):
-    print "Caculating daily sal..."
+    print("Caculating daily sal...")
     result_df = filter_expandable(daily_df)
 
-    print "Calculating sal0..."    
+    print("Calculating sal0...")    
     halflife = horizon / 2
 #    result_df['dk'] = np.exp( -1.0 * halflife *  (result_df['gdate'] - result_df['last']).astype('timedelta64[D]').astype(int) )
 
@@ -32,7 +33,7 @@ def calc_sal_daily(daily_df, horizon):
 
     result_df['cum_ret'] = pd.rolling_sum(result_df['log_ret'], horizon)
 
-    print result_df[ESTIMATE + '_diff_mean'].describe()
+    print(result_df[ESTIMATE + '_diff_mean'].describe())
     result_df['std_diff'] = result_df[ESTIMATE + '_std'].unstack().diff().stack()
     result_df.loc[ result_df['std_diff'] <= 0, ESTIMATE + '_diff_mean'] = 0
     result_df['sal0'] = result_df[ESTIMATE + '_diff_mean'] / result_df[ESTIMATE + '_median']
@@ -73,7 +74,7 @@ def generate_coefs(daily_df, horizon, name, coeffile=None, intercepts=None):
     fits_df = pd.DataFrame(columns=['horizon', 'coef', 'indep', 'tstat', 'nobs', 'stderr', 'intercept'])
     for ii in range(1, horizon+1):
         fitresults_df = regress_alpha(insample_up_df, 'sal0_ma', ii, False, 'daily', True) 
-        print "INTERCEPT {} {}".format(ii, intercepts[ii])
+        print("INTERCEPT {} {}".format(ii, intercepts[ii]))
         fitresults_df['intercept'] = fitresults_df['intercept'] - float(intercepts[ii])
         fits_df = fits_df.append(fitresults_df, ignore_index=True) 
     fits_df.set_index(keys=['indep', 'horizon'], inplace=True)    
@@ -82,11 +83,11 @@ def generate_coefs(daily_df, horizon, name, coeffile=None, intercepts=None):
     coef_list = list()
     coef_list.append( { 'name': 'tgt0_ma_coef', 'group': "up", 'coef': coef0 } )
     coef_list.append( { 'name': 'tgt0_ma_intercept', 'group': 'up', 'coef': intercept0 } )
-    print "Coef{}: {}".format(0, coef0)               
+    print("Coef{}: {}".format(0, coef0))               
     for lag in range(1,horizon):
         coef = coef0 - fits_df.ix['sal0_ma'].ix[lag].ix['coef'] 
         intercept = intercept0 - fits_df.ix['sal0_ma'].ix[lag].ix['intercept'] 
-        print "Coef{}: {}".format(lag, coef)
+        print("Coef{}: {}".format(lag, coef))
         coef_list.append( { 'name': 'sal' + str(lag) + '_ma_coef', 'group': "up", 'coef': coef } )
         coef_list.append( { 'name': 'sal' + str(lag) + '_ma_intercept', 'group': "up", 'coef': intercept } )
 
@@ -102,11 +103,11 @@ def generate_coefs(daily_df, horizon, name, coeffile=None, intercepts=None):
     coef_list.append( { 'name': 'tgt0_ma_coef', 'group': "dn", 'coef': coef0 } )
     coef_list.append( { 'name': 'tgt0_ma_intercept', 'group': 'dn', 'coef': intercept0 } )
 
-    print "Coef{}: {}".format(0, coef0)               
+    print("Coef{}: {}".format(0, coef0))               
     for lag in range(1,horizon):
         coef = coef0 - fits_df.ix['sal0_ma'].ix[lag].ix['coef'] 
         intercept = intercept0 - fits_df.ix['sal0_ma'].ix[lag].ix['intercept'] 
-        print "Coef{}: {}".format(lag, coef)
+        print("Coef{}: {}".format(lag, coef))
         coef_list.append( { 'name': 'sal' + str(lag) + '_ma_coef', 'group': "dn", 'coef': coef } )
         coef_list.append( { 'name': 'sal' + str(lag) + '_ma_intercept', 'group': "dn", 'coef': intercept } )
 
@@ -123,7 +124,7 @@ def sal_alpha(daily_df, horizon, name, coeffile):
 
     coef0 = coef_df.ix['sal0_ma_coef'].ix["up"].ix['coef']
     intercept0 = coef_df.ix['sal0_ma_intercept'].ix["up"].ix['coef']
-    print "Coef{}: {}".format(0, coef0)               
+    print("Coef{}: {}".format(0, coef0))               
     outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] > 0, 'sal0_ma_coef' ] = coef0
     outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] > 0, 'sal0_ma_intercept' ] =  intercept0
     for lag in range(1,horizon):
@@ -134,13 +135,13 @@ def sal_alpha(daily_df, horizon, name, coeffile):
 
     coef0 = coef_df.ix['sal0_ma_coef'].ix["dn"].ix['coef']
     intercept0 = coef_df.ix['sal0_ma_intercept'].ix["dn"].ix['coef']
-    print "Coef{}: {}".format(0, coef0)               
+    print("Coef{}: {}".format(0, coef0))               
     outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] <= 0, 'sal0_ma_coef' ] = coef0
     outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] <= 0, 'sal0_ma_intercept' ] =  intercept0
     for lag in range(1,horizon):
         coef = coef_df.ix['sal' + str(lag) + '0_ma_coef'].ix["dn"].ix['coef']
         intercept = coef_df.ix['sal' + str(lag) + '_ma_intercept'].ix["dn"].ix['coef']
-        print "Coef{}: {}".format(lag, coef)
+        print("Coef{}: {}".format(lag, coef))
         outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] <= 0, 'sal'+str(lag)+'_ma_coef' ] = coef
         outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] <= 0, 'sal'+str(lag)+'_ma_intercept' ] = intercept
 
@@ -181,20 +182,20 @@ if __name__=="__main__":
     end = datetime.strptime(args.asof, "%Y%m%d")
 
     if args.fit:
-        print "Fitting..."
+        print("Fitting...")
         coeffile = args.coeffile + "/" + args.asof + ".sal.csv"
         lookback = timedelta(days=720)    
         start = end - lookback
         uni_df = get_uni(start, end, 30)
     else:
-        print "Not fitting..."
+        print("Not fitting...")
         coeffile = args.coeffile
         lookback = timedelta(days=horizon+5)    
         start = end - lookback
         uni_df = load_live_file(args.inputfile)
         end = datetime.strptime(args.asof + '_' + uni_df['time'].min(), '%Y%m%d_%H:%M:%S')
     
-    print "Running between {} and {}".format(start, end)
+    print("Running between {} and {}".format(start, end))
 
     BARRA_COLS = ['ind1', 'pbeta']
     barra_df = load_barra(uni_df, start, end, BARRA_COLS)

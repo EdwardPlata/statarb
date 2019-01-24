@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import numpy as np
 import pandas as pd
 import gc
@@ -22,7 +23,7 @@ def calc_vol_profiles(full_df):
     full_df['dpvolume_med_21'] = np.nan
     full_df['dpvolume_std_21'] = np.nan
     full_df['dpvolume'] = full_df['dvolume'] * full_df['dvwap']
-    print "Calculating trailing volume profile..."
+    print("Calculating trailing volume profile...")
     for timeslice in ['09:45', '10:00', '10:15', '10:30', '10:45', '11:00', '11:15', '11:30', '11:45', '12:00', '12:15', '12:30', '12:45', '13:00', '13:15', '13:30', '13:45', '14:00', '14:15', '14:30', '14:45', '15:00', '15:15', '15:30', '15:45', '16:00' ]:
         timeslice_df = full_df[ ['dpvolume', 'tradable_med_volume_21', 'close'] ]
         timeslice_df = timeslice_df.unstack().between_time(timeslice, timeslice).stack()
@@ -31,8 +32,8 @@ def calc_vol_profiles(full_df):
         timeslice_df['dpvolume_med_21'] = timeslice_df['dpvolume'].groupby(level='sid').apply(lambda x: pd.rolling_median(x.shift(1), 21))
         timeslice_df['dpvolume_std_21'] = timeslice_df['dpvolume'].groupby(level='sid').apply(lambda x: pd.rolling_std(x.shift(1), 21))
         m_df = timeslice_df.dropna()
-        print m_df.head()
-        print "Average dvol frac at {}: {}".format(timeslice, (m_df['dpvolume_med_21'] / (m_df['tradable_med_volume_21'] * m_df['close'])).mean())
+        print(m_df.head())
+        print("Average dvol frac at {}: {}".format(timeslice, (m_df['dpvolume_med_21'] / (m_df['tradable_med_volume_21'] * m_df['close'])).mean()))
         full_df.ix[ timeslice_df.index, 'dpvolume_med_21'] = timeslice_df['dpvolume_med_21']
         full_df.ix[ timeslice_df.index, 'dpvolume_std_21'] = timeslice_df['dpvolume_std_21']
 
@@ -46,7 +47,7 @@ def calc_price_extras(daily_df):
     return daily_df
 
 def calc_forward_returns(daily_df, horizon):
-    print "Calculating forward returns..."
+    print("Calculating forward returns...")
     results_df = pd.DataFrame( index=daily_df.index )
     for ii in range(1, horizon+1):
         retname = 'cum_ret'+str(ii) 
@@ -64,15 +65,15 @@ def winsorize(data, std_level=5):
     return result
 
 def winsorize_by_date(data):
-    print "Winsorizing by day..."
+    print("Winsorizing by day...")
     return data.groupby(level='date', sort=False).transform(winsorize)
 
 def winsorize_by_ts(data):
-    print "Winsorizing by day..."
+    print("Winsorizing by day...")
     return data.groupby(level='iclose_ts', sort=False).transform(winsorize)
 
 def winsorize_by_group(data, group):
-    print "Winsorizing by day..."
+    print("Winsorizing by day...")
     return data.groupby([group], sort=False).transform(winsorize)
 
 def rolling_ew_corr_pairwise(df, halflife):
@@ -128,7 +129,7 @@ def create_z_score(daily_df, name):
     return daily_df
     
 def calc_factors(daily_df, barraOnly=False):
-    print "Calculating factors..."
+    print("Calculating factors...")
     
     allreturns_df = pd.DataFrame(columns=['barraResidRet'], index=daily_df.index)
     if barraOnly:
@@ -138,14 +139,14 @@ def calc_factors(daily_df, barraOnly=False):
         daily_df = create_z_score(daily_df, 'rating_mean')
         factors = ALL_FACTORS
 
-    print "Total len: {}".format(len(daily_df))
+    print("Total len: {}".format(len(daily_df)))
     cnt = 0
     cnt1 = 0
     factorrets = list()
     for name, group in daily_df.groupby(level='date'):
-        print "Regressing {}".format(name)
+        print("Regressing {}".format(name))
         cnt1 += len(group)
-        print "Size: {} {}".format(len(group), cnt1)
+        print("Size: {} {}".format(len(group), cnt1))
 
         loadings_df = group[ factors ]
         loadings_df = loadings_df.reset_index().fillna(0)
@@ -173,12 +174,12 @@ def calc_factors(daily_df, barraOnly=False):
 #        print returns_df.head()
 
         fRets, residRets = factorize(loadings_df, returns_df, weights_df, indwgt)        
-        print "Factor Returns:"
+        print("Factor Returns:")
 #        print fRets
 #        print residRets
         
         cnt += len(residRets)
-        print "Running tally: {}".format(cnt)
+        print("Running tally: {}".format(cnt))
         fdf = pd.DataFrame([ [i,v] for i, v in fRets.items() ], columns=['factor', 'ret'])
         fdf['date'] = name
         factorrets.append( fdf )
@@ -189,12 +190,12 @@ def calc_factors(daily_df, barraOnly=False):
 
 #    print allreturns_df.tail()
     factorRets_df = pd.concat(factorrets).set_index(['date', 'factor']).fillna(0)
-    print "Final len {}".format(len(allreturns_df))
+    print("Final len {}".format(len(allreturns_df)))
     daily_df['barraResidRet'] = allreturns_df['barraResidRet']
     return daily_df, factorRets_df
 
 def calc_intra_factors(intra_df, barraOnly=False):
-    print "Calculating intra factors..."
+    print("Calculating intra factors...")
     
     allreturns_df = pd.DataFrame(columns=['barraResidRetI'], index=intra_df.index)
 
@@ -203,14 +204,14 @@ def calc_intra_factors(intra_df, barraOnly=False):
     else:
         factors = ALL_FACTORS
     
-    print "Total len: {}".format(len(intra_df))
+    print("Total len: {}".format(len(intra_df)))
     cnt = 0
     cnt1 = 0
     factorrets = list()
     for name, group in intra_df.groupby(level='iclose_ts'):
-        print "Regressing {}".format(name)
+        print("Regressing {}".format(name))
         cnt1 += len(group)
-        print "Size: {} {}".format(len(group), cnt1)
+        print("Size: {} {}".format(len(group), cnt1))
 
         loadings_df = group[ factors ]
         loadings_df = loadings_df.reset_index().fillna(0)
@@ -237,12 +238,12 @@ def calc_intra_factors(intra_df, barraOnly=False):
 #        print returns_df.head()
 
         fRets, residRets = factorize(loadings_df, returns_df, weights_df, indwgt)        
-        print "Factor Returns:"
-        print fRets
+        print("Factor Returns:")
+        print(fRets)
 #        print residRets
         
         cnt += len(residRets)
-        print "Running tally: {}".format(cnt)
+        print("Running tally: {}".format(cnt))
         fdf = pd.DataFrame([ [i,v] for i, v in fRets.items() ], columns=['factor', 'ret'])
         fdf['iclose_ts'] = name
         factorrets.append( fdf )
@@ -253,12 +254,12 @@ def calc_intra_factors(intra_df, barraOnly=False):
 
 #    print allreturns_df.tail()
     factorRets_df = pd.concat(factorrets).set_index(['iclose_ts', 'factor']).fillna(0)
-    print "Final len {}".format(len(allreturns_df))
+    print("Final len {}".format(len(allreturns_df)))
     intra_df['barraResidRetI'] = allreturns_df['barraResidRetI']
     return intra_df, factorRets_df
 
 def factorize(loadings_df, returns_df, weights_df, indwgt):
-    print "Factorizing..."
+    print("Factorizing...")
     params = Parameters()
     for colname in loadings_df.columns:
         expr = None
@@ -268,14 +269,14 @@ def factorize(loadings_df, returns_df, weights_df, indwgt):
             for ind in INDUSTRIES:
                 expr += "+" + ind + "*" + str(indwgt[ind])
 #                expr += "+" + ind
-            print expr
+            print(expr)
         params.add(colname, value=0.0, expr=expr)
 
-    print "Minimizing..."
+    print("Minimizing...")
     result = minimize(fcn2min, params, args=(loadings_df, returns_df))
-    print "Result: " 
+    print("Result: ") 
     if not result.success:
-        print "ERROR: failed fit"
+        print("ERROR: failed fit")
         exit(1)
 
     fRets_d = dict()
@@ -288,15 +289,15 @@ def factorize(loadings_df, returns_df, weights_df, indwgt):
         upper = val + error * 2
         lower = val - error * 2
         if upper * lower < 0:
-            print "{} not significant: {}, {}".format(param, val, error)
+            print("{} not significant: {}, {}".format(param, val, error))
 
-    print "SEAN"
-    print result
-    print result.residual
-    print result.message
-    print result.lmdif_message
-    print result.nfev
-    print result.ndata
+    print("SEAN")
+    print(result)
+    print(result.residual)
+    print(result.message)
+    print(result.lmdif_message)
+    print(result.nfev)
+    print(result.ndata)
 
     residRets_na = result.residual
     return fRets_d, residRets_na

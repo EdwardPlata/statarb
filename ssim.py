@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from util import *
 from regress import *
 from loaddata import *
@@ -64,21 +65,21 @@ if args.file is not None:
 else:
     for pair in fcasts:
         fdir, fcast, weight = pair.split(":")
-        print fdir, fcast, weight
+        print(fdir, fcast, weight)
         flist = list()
         for ff in sorted(glob.glob( "./" + fdir + "/opt/opt." + fcast + ".*.csv")):
             m = re.match(r".*opt\." + fcast + "\.(\d{8})_\d{6}.csv", str(ff))
             if m is None: continue
             d1 = int(m.group(1))
             if d1 < int(args.start) or d1 > int(args.end): continue
-            print "Loading {}".format(ff)
+            print("Loading {}".format(ff))
             flist.append(pd.read_csv(ff, parse_dates=True))
         fcast_trades_df = pd.concat(flist)
         fcast_trades_df['iclose_ts'] = pd.to_datetime(fcast_trades_df['iclose_ts'])
         fcast_trades_df = fcast_trades_df.set_index(['iclose_ts', 'sid']).sort()
 
-        print fcast
-        print fcast_trades_df.xs(testid, level=1)[['traded','shares']]
+        print(fcast)
+        print(fcast_trades_df.xs(testid, level=1)[['traded','shares']])
 
         if trades_df is None:
             trades_df = fcast_trades_df
@@ -118,12 +119,12 @@ long_names = 0
 short_names = 0
 
 if args.fill == "vwap":
-    print "Filling at vwap..."
+    print("Filling at vwap...")
     trades_df['fillprice'] = trades_df['bvwap_b_n']
-    print "Bad count: {}".format( len(trades_df) - len(trades_df[ trades_df['fillprice'] > 0 ]) )
+    print("Bad count: {}".format( len(trades_df) - len(trades_df[ trades_df['fillprice'] > 0 ]) ))
     trades_df.ix[  (trades_df['fillprice'] <= 0) | (trades_df['fillprice'].isnull()), 'fillprice' ] = trades_df['iclose']
 else:
-    print "Filling at mid..."
+    print("Filling at mid...")
     trades_df['fillprice'] = trades_df['iclose']
 
 trades_df['pdiff'] = trades_df['fillprice'] - trades_df['iclose']
@@ -224,7 +225,7 @@ for ts, group_df in trades_df.groupby(level='iclose_ts'):
         ret = delta/notional
         daytraded = day_bucket['trd'][dayname]
         notional2 = np.sum(np.abs((group_df['close'] * group_df['position'] / group_df['iclose'])))
-        print "{}: {} {} {} {:.4f} {:.2f} {}".format(ts, notional, pnl_tot, delta, ret, daytraded/notional, notional2 )
+        print("{}: {} {} {} {:.4f} {:.2f} {}".format(ts, notional, pnl_tot, delta, ret, daytraded/notional, notional2 ))
         day_bucket['pnl'][dayname] = delta
         month_bucket['pnl'][monthname] += delta
         dayofweek_bucket['pnl'][weekdayname] += delta
@@ -254,25 +255,25 @@ for ts, group_df in trades_df.groupby(level='iclose_ts'):
 
 period = "{}.{}".format(args.start, args.end)
 
-print
-print
-print "Fill Slip: {}".format(fillslip_tot/traded_tot)
+print()
+print()
+print("Fill Slip: {}".format(fillslip_tot/traded_tot))
 oppslip = (trades_df['unfilled'] * trades_df['slip2close']).sum()
-print "Opp slip: {}".format(oppslip)
-print "Totslip: {}".format(totslip)
-print "Avg turnover: {}".format(totturnover/cnt)
-print "Longs: {}".format(long_names/cnt)
-print "Shorts: {}".format(short_names/cnt)
-print
+print("Opp slip: {}".format(oppslip))
+print("Totslip: {}".format(totslip))
+print("Avg turnover: {}".format(totturnover/cnt))
+print("Longs: {}".format(long_names/cnt))
+print("Shorts: {}".format(short_names/cnt))
+print()
 
 
-print "Conditional breakdown"
+print("Conditional breakdown")
 lastslice = trades_df.xs(last_ts, level='iclose_ts')
 condname = args.cond
 
 for ind in INDUSTRIES:
     decile = lastslice[ lastslice['indname1'] == ind ]
-    print "{}: {}".format(ind, decile['cum_pnl'].sum())
+    print("{}: {}".format(ind, decile['cum_pnl'].sum()))
 
 
 lastslice['decile'] = lastslice[condname].rank()/float(len(lastslice)) * 10
@@ -280,7 +281,7 @@ lastslice['decile'] = lastslice['decile'].fillna(-1)
 lastslice['decile'] = lastslice['decile'].astype(int)
 for ii in range (-1,10):          
     decile = lastslice[ lastslice['decile'] == ii ]
-    print "{}: {} {}".format(ii, decile[condname].mean(), decile['cum_pnl'].sum())
+    print("{}: {} {}".format(ii, decile[condname].mean(), decile['cum_pnl'].sum()))
 
 firstslice = trades_df.xs( min(trades_df.index)[0], level='iclose_ts')
 pnlbystock = lastslice['cum_pnl'].fillna(0)
@@ -290,26 +291,26 @@ plt.savefig("stocks.png")
 maxpnlid = pnlbystock.idxmax()
 minpnlid = pnlbystock.idxmin()
 
-print "Max pnl stock pnl distribution: {} {}".format(maxpnlid, pnlbystock.ix[ maxpnlid ])
-print "Min pnl stock pnl distribution: {} {}".format(minpnlid, pnlbystock.ix[ minpnlid ])
+print("Max pnl stock pnl distribution: {} {}".format(maxpnlid, pnlbystock.ix[ maxpnlid ]))
+print("Min pnl stock pnl distribution: {} {}".format(minpnlid, pnlbystock.ix[ minpnlid ]))
 plt.figure()
 maxstock_df = trades_df.xs(maxpnlid, level=1)
 maxstock_df['day_pnl'].hist(bins=100)
 plt.savefig("maxstock.png")
 #maxpnlid = maxstock_df['day_pnl'].idxmax()
 #print maxstock_df.xs(maxpnlid)
-print 
+print() 
 
 # timeslice = trades_df.xs( "2011-11-25 10:00:00", level='iclose_ts' )
 # plt.figure()
 # timeslice['day_pnl'].hist()
 # plt.savefig("badtimes.png")
 
-print "Factor Pnl"
+print("Factor Pnl")
 firstslice = create_z_score(firstslice, 'srisk_pct')
 firstslice = create_z_score(firstslice, 'rating_mean')
 merge = pd.merge(firstslice.reset_index(), lastslice.reset_index(), left_on=['sid'], right_on=['sid'], suffixes=['_first', '_last'])
-print merge.columns
+print(merge.columns)
 #merge['srisk_pct_z_first'] = merge['srisk_pct_z']
 lastnotional = np.abs(lastslice['position']).sum()
 for factor in BARRA_FACTORS + PROP_FACTORS:
@@ -317,15 +318,15 @@ for factor in BARRA_FACTORS + PROP_FACTORS:
     exposure = (merge['cum_pnl_last'] * merge[factor + '_first']).sum() / lastnotional
     pnl = (trades_df['day_pnl']  * trades_df[factor]).sum()
 #    exposure = (trades_df['position'] * trades_df[factor]).groupby(level='iclose_ts')
-    print "{}: exposure: {:.2f}, pnl: {}".format(factor, exposure, pnl)
-print
+    print("{}: exposure: {:.2f}, pnl: {}".format(factor, exposure, pnl))
+print()
 
-print "Forecast-trade corr:"
-print trades_df[['forecast', 'traded', 'target']].corr()
+print("Forecast-trade corr:")
+print(trades_df[['forecast', 'traded', 'target']].corr())
 plt.figure()
 plt.scatter(trades_df['forecast'], trades_df['traded'])
 plt.savefig("forecast_trade_corr." + period + ".png")
-print 
+print() 
 
 longs = pd.DataFrame([ [d,v] for d, v in sorted(day_bucket['long'].items()) ], columns=['date', 'long'])
 longs.set_index(keys=['date'], inplace=True)
@@ -352,7 +353,7 @@ pnl_df = pd.DataFrame([ [d,v] for d, v in sorted(day_bucket['pnl'].items()) ], c
 pnl_df.set_index(['date'], inplace=True)
 rets = pd.merge(pnl_df, nots, left_index=True, right_index=True)
 rets = pd.merge(rets, trds, left_index=True, right_index=True)
-print "Total Pnl: ${:.0f}K".format(rets['pnl'].sum()/1000.0)
+print("Total Pnl: ${:.0f}K".format(rets['pnl'].sum()/1000.0))
 
 rets['day_rets'] = rets['pnl'] / rets['notional'].shift(1)
 rets['day_rets'].replace([np.inf, -np.inf], np.nan, inplace=True)
@@ -368,33 +369,33 @@ mean = rets['day_rets'].mean() * 252
 std = rets['day_rets'].std() * math.sqrt(252)
     
 sharpe =  mean/std
-print "Day mean: {:.4f} std: {:.4f} sharpe: {:.4f} avg Notional: ${:.0f}K".format(mean, std, sharpe, rets['notional'].mean()/1000.0)
-print
+print("Day mean: {:.4f} std: {:.4f} sharpe: {:.4f} avg Notional: ${:.0f}K".format(mean, std, sharpe, rets['notional'].mean()/1000.0))
+print()
 
-print "Month breakdown Bps"
+print("Month breakdown Bps")
 for month in sorted(month_bucket['not'].keys()):
     notional = month_bucket['not'][month]
     traded = month_bucket['trd'][month]
     if notional > 0:
-        print "Month {}: {:.4f} {:.4f}".format(month, 10000 * month_bucket['pnl'][month]/notional, traded/notional)
-print 
+        print("Month {}: {:.4f} {:.4f}".format(month, 10000 * month_bucket['pnl'][month]/notional, traded/notional))
+print() 
 
-print "Time breakdown Bps"
+print("Time breakdown Bps")
 for time in sorted(time_bucket['not'].keys()):
     notional = time_bucket['not'][time]
     traded = time_bucket['trd'][time]
     if notional > 0:
-        print "Time {}: {:.4f} {:.4f}".format(time, 10000 * time_bucket['pnl'][time]/notional, traded/notional)
-print 
+        print("Time {}: {:.4f} {:.4f}".format(time, 10000 * time_bucket['pnl'][time]/notional, traded/notional))
+print() 
 
-print "Dayofweek breakdown Bps"
+print("Dayofweek breakdown Bps")
 for dayofweek in sorted(dayofweek_bucket['not'].keys()):
     notional = dayofweek_bucket['not'][dayofweek]
     traded = dayofweek_bucket['trd'][dayofweek]
     if notional > 0:
-        print "Dayofweek {}: {:.4f} {:.4f}".format(dayofweek, 10000 * dayofweek_bucket['pnl'][dayofweek]/notional, traded/notional)
-print
+        print("Dayofweek {}: {:.4f} {:.4f}".format(dayofweek, 10000 * dayofweek_bucket['pnl'][dayofweek]/notional, traded/notional))
+print()
 
-print "Up %: {:.4f}".format(float(upnames)/(upnames+downnames))
+print("Up %: {:.4f}".format(float(upnames)/(upnames+downnames)))
 
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import sys
 import os
 import glob
@@ -47,40 +48,40 @@ def get_uni(start, end, lookback, uni_size=1400):
     univ_dir = UNIV_BASE_DIR + year
     univ_file = univ_dir + "/" + unidate + ".csv"
     univ_df = pd.read_csv(univ_file, header=0, usecols=['sid', 'ticker_root', 'status', 'country', 'currency'], index_col=['sid'])
-    print "Universe size (raw): {}".format(len(univ_df.index))    
+    print("Universe size (raw): {}".format(len(univ_df.index)))    
     univ_df = univ_df[ (univ_df['country'] == "USA") & (univ_df['currency'] == "USD") ]
-    print "Universe size (US/USD): {}".format(len(univ_df.index))    
+    print("Universe size (US/USD): {}".format(len(univ_df.index)))    
 
     secdata_dir = SECDATA_BASE_DIR + year
     secdata_file = secdata_dir + "/" + unidate + ".csv.gz"
     secdata_df = pd.read_csv(secdata_file, header=0, compression='gzip', usecols=['sid', 'symbol', 'sector', 'ind', 'group', 'sector_name', 'ind_name', 'estu_inter', 'estu_barra4s'], index_col=['sid'])
     univ_df = pd.merge(univ_df, secdata_df, how='inner', left_index=True, right_index=True, sort=True)
-    print "Universe size (secdata): {}".format(len(univ_df.index))    
+    print("Universe size (secdata): {}".format(len(univ_df.index)))    
     univ_df = univ_df[ (univ_df['estu_barra4s'] == 1) | (univ_df['ind'] == 404020) ]
     del univ_df['estu_inter']
     del univ_df['estu_barra4s']
-    print "Universe size (estu_inter): {}".format(len(univ_df.index))    
+    print("Universe size (estu_inter): {}".format(len(univ_df.index)))    
 
     univ_df = univ_df[ univ_df['group'] != 3520 ]
-    print "Universe size (bio): {}".format(len(univ_df.index))    
+    print("Universe size (bio): {}".format(len(univ_df.index)))    
 
     price_dir = PRICE_BASE_DIR + year
     price_file = price_dir + "/" + unidate + ".csv"
     price_df = pd.read_csv(price_file, header=0, usecols=['sid', 'ticker', 'close', 'tradable_med_volume_21', 'mkt_cap'], index_col=['sid'])
 
     univ_df = pd.merge(univ_df, price_df, how='inner', left_index=True, right_index=True, sort=True)    
-    print "Universe size (prices): {}".format(len(univ_df.index))    
+    print("Universe size (prices): {}".format(len(univ_df.index)))    
 
     univ_df = univ_df[ (univ_df['close'] > t_low_price) & (univ_df['close'] < t_high_price) ]
-    print "Universe size (price range): {}".format(len(univ_df.index))    
+    print("Universe size (price range): {}".format(len(univ_df.index)))    
 
     univ_df['mdvp'] = univ_df['tradable_med_volume_21'] * univ_df['close']
     univ_df = univ_df[ univ_df['mdvp'] > t_min_advp ]
-    print "Universe size (adv): {}".format(len(univ_df.index))
+    print("Universe size (adv): {}".format(len(univ_df.index)))
 
     univ_df['rank'] = univ_df['mkt_cap'].fillna(0).rank(ascending=False)
     univ_df = univ_df[ univ_df['rank'] <= uni_size ]
-    print "Universe size (mktcap): {}".format(len(univ_df.index))
+    print("Universe size (mktcap): {}".format(len(univ_df.index)))
     
     return univ_df[ ['symbol', 'sector_name'] ]
 #    univ_df = univ_df[['ticker_root']]
@@ -125,14 +126,14 @@ def load_barra(uni_df, start, end, cols=None):
         year = dateStr[0:4]
         barra_dir = BARRA_BASE_DIR + year
         barra_file = barra_dir + "/" + dateStr + ".use4s_rsk.rev.csv"
-        print "Loading {}".format(barra_file)
+        print("Loading {}".format(barra_file))
         try:
             if cols is not None:
                 barra_df = pd.read_csv(barra_file, usecols=cols)
             else:
                 barra_df = pd.read_csv(barra_file)
         except IOError:
-            print "File not found: {}".format(barra_file)
+            print("File not found: {}".format(barra_file))
             date += timedelta(days=1)
             continue
 
@@ -158,11 +159,11 @@ def load_daybars(uni_df, start, end, cols=None, freq='30Min'):
     while ( date < end ):
         dateStr = date.strftime("%Y%m%d")
         bar_file = BAR_BASE_DIR + dateStr + "/daily.txt.gz"
-        print "Loading {}".format(bar_file)
+        print("Loading {}".format(bar_file))
         try:
             bars_df = pd.read_csv(bar_file, compression='gzip', sep="|", header=None, names=['ticker', 'iclose_ts', 'dopen', 'dhigh', 'dlow', 'iclose', 'qhigh', 'qlow', 'dvwap', 'dvolume', 'dtrades', 'open_c', 'open_c_volume', 'close_c', 'close_c_volume'], index_col=['iclose_ts'], converters={'iclose_ts': fromtimestamp}, usecols=cols)
         except IOError:
-            print "File not found: {}".format(bar_file)
+            print("File not found: {}".format(bar_file))
             date += timedelta(days=1)
             continue
 
@@ -194,11 +195,11 @@ def load_prices(uni_df, start, end, cols):
         year = dateStr[0:4]
         price_dir = PRICE_BASE_DIR + year
         price_file = price_dir + "/" + dateStr + ".equ_prices.rev.csv"
-        print "Loading {}".format(price_file)
+        print("Loading {}".format(price_file))
         try:
             prices_df = pd.read_csv(price_file, header=0, usecols=cols)
         except IOError:
-            print "File not found: {}".format(price_file)
+            print("File not found: {}".format(price_file))
             date += timedelta(days=1)
             continue
 
@@ -234,21 +235,21 @@ def load_volume_profile(uni_df, start, end, freq='30Min'):
         year = dateStr[0:4]
         price_dir = PRICE_BASE_DIR + year
         volume_file = price_dir + "/" + dateStr + ".equ_volume_profiles_20d.rev.csv"
-        print "Loading {}".format(volume_file)
+        print("Loading {}".format(volume_file))
         try:
             volume_df = pd.read_csv(volume_file, header=0, index_col=['sid'])
         except IOError:
-            print "File not found: {}".format(volume_file)
+            print("File not found: {}".format(volume_file))
             date += timedelta(days=1)
             continue
 
-        print "stacking..."
+        print("stacking...")
         volume_df = volume_df.stack()
         volume_df = volume_df.reset_index()
 
         volume_df = volume_df[ (volume_df['level_1'] != 'med_open_volume' ) & (volume_df['level_1'] != 'med_close_volume') & (volume_df['level_1'] != 'med_cum_pre_mkt_volume') & (volume_df['level_1'] != 'med_cum_post_mkt_volume')]
         timemap = dict()   
-        print "parsing dates..."     
+        print("parsing dates...")     
         for rawtime in volume_df['level_1'].unique():
             val = None
             try:
@@ -257,15 +258,15 @@ def load_volume_profile(uni_df, start, end, freq='30Min'):
                 pass
             timemap[rawtime] = val
             
-        print "mapping dates..."
+        print("mapping dates...")
         volume_df['iclose_ts'] = volume_df['level_1'].apply(lambda x: timemap[x])        
         volume_df['date'] = date
         volume_df.set_index(keys=['date', 'sid'], inplace=True)
-        print "merging..."
+        print("merging...")
         volume_df = pd.merge(uni_df, volume_df, how='inner', left_index=True, right_index=True, sort=True, suffixes=['', '_dead'])
         volume_df.reset_index(inplace=True)
         grouped = volume_df.groupby('sid')
-        print "accumulating volumes..."
+        print("accumulating volumes...")
         for name, group in grouped:
             group['med_cum_volume'] = pd.expanding_sum(group[0])
             del group[0]
@@ -281,7 +282,7 @@ def load_volume_profile(uni_df, start, end, freq='30Min'):
     
     result_df = pd.concat(result_dfs)
     result_df = result_df.reset_index()
-    print result_df.head()
+    print(result_df.head())
     result_df['iclose_ts'] = result_df['level_0']
     del result_df['level_0']
     result_df.set_index(keys=['iclose_ts', 'sid'], inplace=True)
@@ -289,7 +290,7 @@ def load_volume_profile(uni_df, start, end, freq='30Min'):
     return result_df
 
 def aggregate_bars(bars_df, freq=30):
-    print "Aggregating bars..."
+    print("Aggregating bars...")
     #ASSUMES SORTED
     start = bars_df['bopen_ts'].min()
     t0 = start
@@ -297,7 +298,7 @@ def aggregate_bars(bars_df, freq=30):
     end = bars_df.index.max()
     agg_bars_dfs = list()
     while ( t1 <= end ):
-        print "Grouping to {}".format(t1)
+        print("Grouping to {}".format(t1))
         sub_df = bars_df.truncate(after=t1)
         grouped = sub_df.groupby('ticker')
          
@@ -376,11 +377,11 @@ def load_bars(uni_df, start, end, cols=None, freq=30):
     while ( date < end ):
         dateStr = date.strftime("%Y%m%d")
         bar_file = BAR_BASE_DIR + dateStr + "/bars.txt.gz"
-        print "Loading {}".format(bar_file)
+        print("Loading {}".format(bar_file))
         try:
             bars_df = pd.read_csv(bar_file, compression='gzip', sep="|", header=None, names=['ticker', 'bopen_ts', 'iclose_ts', 'bopen', 'bfirst', 'bhigh', 'blow', 'blast', 'iclose', 'bvwap', 'bvolume', 'btrades', 'meanSpread', 'meanEffectiveSpread', 'meanBidSize', 'meanAskSize', 'bidHitTrades', 'midHitTrades', 'askHitTrades', 'bidHitDollars', 'midHitDollars', 'askHitDollars', 'outsideTrades', 'outsideDollars'], converters={'iclose_ts': fromtimestamp, 'bopen_ts': fromtimestamp}, na_values=['-1'])
         except IOError:
-            print "File not found: {}".format(bar_file)
+            print("File not found: {}".format(bar_file))
             date += timedelta(days=1)
             continue
         
@@ -413,7 +414,7 @@ def load_earnings_dates(uni_df, start, end):
         try:
             df = pd.read_csv(earnings_file)
         except IOError:
-            print "File not found: {}".format(earnings_file)
+            print("File not found: {}".format(earnings_file))
             date += timedelta(days=1)
             continue
  
@@ -440,11 +441,11 @@ def load_past_earnings_dates(uni_df, start, end):
         dateStr = date.strftime("%Y%m%d")
         earnings_dir = EARNINGS_BASE_DIR
         earnings_file = earnings_dir + "/" + dateStr + ".latest_earnings_date.rev.csv"
-        print earnings_file
+        print(earnings_file)
         try:
             df = pd.read_csv(earnings_file)
         except IOError:
-            print "File not found: {}".format(earnings_file)
+            print("File not found: {}".format(earnings_file))
             date += timedelta(days=1)
             continue
  
@@ -476,7 +477,7 @@ def load_locates(uni_df, start, end):
         try:
             df = pd.read_csv(locates_file, usecols=['sid', 'qty', 'fee_rate'])
         except IOError:
-            print "File not found: {}".format(locates_file)
+            print("File not found: {}".format(locates_file))
             date += timedelta(days=1)
             continue
  
@@ -505,7 +506,7 @@ def load_merged_results(fdirs, start, end, cols=None):
     return merged_df
 
 def load_mus(mdir, fcast, start, end):
-    print "Looking in {}".format(mdir)
+    print("Looking in {}".format(mdir))
     fcast_dfs = list()
     for ff in sorted(glob.glob(mdir + "/"+ fcast + "/alpha.*")):
         m = re.match(r".*alpha\." + fcast + "\.(\d{8})_(\d{4}).*", str(ff))
@@ -514,7 +515,7 @@ def load_mus(mdir, fcast, start, end):
         if int(ftime) <= 930 or int(ftime) >= 1600: continue
         if start is not None:
             if int(fdate) < int(start) or int(fdate) > int(end): continue
-        print "Loading {} for {}".format(ff, fdate)            
+        print("Loading {} for {}".format(ff, fdate))            
         ts = dateparser.parse(fdate + " " + ftime)
         df = pd.read_csv(ff, header=0, parse_dates=True, sep=",")
         df['iclose_ts'] = ts
@@ -525,7 +526,7 @@ def load_mus(mdir, fcast, start, end):
     return fcast_df
 
 def load_qb_implied_orders(mdir, start, end):
-    print "Looking in {}".format(mdir)
+    print("Looking in {}".format(mdir))
     fcast_dfs = list()
     files = sorted(glob.glob(mdir + "/*.PORTFOLIO.csv"))
     for ff in files:
@@ -533,7 +534,7 @@ def load_qb_implied_orders(mdir, start, end):
         fdate = m.group(1)
         if start is not None:
             if int(fdate) < int(start) or int(fdate) > int(end): continue
-        print "Loading {} for {}".format(ff, fdate)            
+        print("Loading {} for {}".format(ff, fdate))            
         df = pd.read_csv(ff, header=0, parse_dates=True, sep=",", usecols=['time', 'sid', 'ref_price', 'net_qty', 'open_long_amt', 'open_short_amt'], index=['time', 'sid'])
 
         df['open_order'] = (df['open_long_amt'] - df['open_short_amt']) / df['ref_price']
@@ -552,7 +553,7 @@ def load_qb_implied_orders(mdir, start, end):
     return fcast_df
 
 def load_qb_positions(mdir, start, end):
-    print "Looking in {}".format(mdir)
+    print("Looking in {}".format(mdir))
     fcast_dfs = list()
     files = sorted(glob.glob(mdir + "/*.csv"))
     for ff in files:
@@ -560,7 +561,7 @@ def load_qb_positions(mdir, start, end):
         fdate = m.group(1)
         if start is not None:
             if int(fdate) < int(start) or int(fdate) > int(end): continue
-        print "Loading {} for {}".format(ff, fdate)            
+        print("Loading {} for {}".format(ff, fdate))            
         df = pd.read_csv(ff, header=0, parse_dates=True, sep=",", usecols=['time', 'sid', 'ref_price', 'net_qty', 'open_long_amt', 'open_short_amt'])
 
         df['iclose_ts'] = pd.to_datetime(fdate + " " + df['time'])
@@ -571,7 +572,7 @@ def load_qb_positions(mdir, start, end):
     return fcast_df
 
 def load_qb_eods(mdir, start, end):
-    print "Looking in {}".format(mdir)
+    print("Looking in {}".format(mdir))
     fcast_dfs = list()
     files = sorted(glob.glob(mdir + "/.csv"))
     for ff in files:
@@ -579,7 +580,7 @@ def load_qb_eods(mdir, start, end):
         fdate = m.group(1)
         if start is not None:
             if int(fdate) < int(start) or int(fdate) > int(end): continue
-        print "Loading {} for {}".format(ff, fdate)            
+        print("Loading {} for {}".format(ff, fdate))            
         df = pd.read_csv(ff, header=0, parse_dates=True, sep=",", usecols=['time', 'sid', 'ref_price', 'today_long', 'today_short'])
         df['iclose_ts'] = pd.to_datetime(fdate + " 16:00:00")
         df.set_index(['iclose_ts', 'sid'], inplace=True)
@@ -620,7 +621,7 @@ def load_factor_cache(start, end):
         d1 = dateparser.parse(m.group(1))
         d2 = dateparser.parse(m.group(2))
         if d2 < start or d1 > end: continue
-        print "Loading {}".format(ff)
+        print("Loading {}".format(ff))
         df = pd.read_hdf(ff, 'table')
         df = df.truncate(before=start - timedelta(days=30), after=end)
         if len(df) > 0:
@@ -631,7 +632,7 @@ def load_factor_cache(start, end):
         result_df = result_df.combine_first(df)
 
     result_df.index.names = ['date', 'factor']
-    print result_df.columns
+    print(result_df.columns)
     return result_df
 
 def load_cache(start, end, cols=None):
@@ -642,7 +643,7 @@ def load_cache(start, end, cols=None):
         d1 = dateparser.parse(m.group(1))
         d2 = dateparser.parse(m.group(2))
         if d2 < start or d1 > end: continue
-        print "Loading {}".format(ff)
+        print("Loading {}".format(ff))
         df = pd.read_hdf(ff, 'table')
         if cols is not None:
             df = df[cols]
@@ -660,7 +661,7 @@ def load_cache(start, end, cols=None):
 
 def load_all_results(fdir, start, end, cols=None):
     fdir += "/all/"    
-    print "Looking in {}".format(fdir)
+    print("Looking in {}".format(fdir))
     fcast_dfs = list()
     for ff in sorted(glob.glob(fdir + "/alpha.*")):
         m = re.match(r".*alpha\.all\.(\d{8})_(\d{4}).*", str(ff))
@@ -668,7 +669,7 @@ def load_all_results(fdir, start, end, cols=None):
         ftime = int(m.group(2))
         if ftime < 1000 or ftime > 1530: continue
         if fdate < int(start) or fdate > int(end): continue
-        print "Loading {} for {}".format(ff, fdate)    
+        print("Loading {} for {}".format(ff, fdate))    
         
         if cols is not None:
             df = pd.read_csv(ff, index_col=['iclose_ts', 'sid'], header=0, parse_dates=True, sep=",", usecols=cols)
@@ -684,7 +685,7 @@ def load_all_results(fdir, start, end, cols=None):
 BARRA_INDS = ['indname1', 'wgt1', 'indname2', 'wgt2', 'indname3', 'wgt3', 'indname4', 'wgt4', 'indname5', 'wgt5']
 
 def transform_barra(barra_df):
-    print "Transforming barra data..."
+    print("Transforming barra data...")
     barra1_df = barra_df[ ['indname1', 'wgt1'] ].dropna()
     barra2_df = barra_df[ ['indname2', 'wgt2'] ].dropna()
     barra3_df = barra_df[ ['indname3', 'wgt3'] ].dropna()
@@ -749,14 +750,14 @@ def load_ratings_hist(uni_df, start, end, intra=False):
         for time in times:            
 #            timeAdjusted = str(int(time.split(":")[0]) - 3) + ":" + time.split(":")[1] 
             sql = "select * from t_ibes_hist_rec_snapshot where timestamp between '{} {}' and '{} {}' group by sid, ibes_ticker, estimator having timestamp = max(timestamp)".format(startDateStr, time, endDateStr, time)
-            print sql
+            print(sql)
             df = psql.frame_query(sql, con)
             df = df[ df['ibes_rec_code'] != '' ]
             #            df['ts'] = pd.to_datetime( date.strftime("%Y%m%d") + " " + time )
             df['date'] = pd.to_datetime( date.strftime("%Y%m%d") )
             df['ibes_rec_code'] = df['ibes_rec_code'].astype(int)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
-            print df.columns
+            print(df.columns)
             df = pd.merge(uni_df[ uni_df['date'] == date ], df, how='inner', left_on=['sid'], right_on=['sid'], sort=True, suffixes=['', '_dead'])
             if intra:
                 df['iclose_ts'] = pd.to_datetime(endDateStr + " " + time)
@@ -808,7 +809,7 @@ def load_target_hist(uni_df, start, end, intra=False):
         for time in times:            
             #timeAdjusted = str(int(time.split(":")[0]) - 3) + ":" + time.split(":")[1] 
             sql = "select * from t_ibes_hist_ptg_snapshot where timestamp between '{} {}' and '{} {}' and horizon in ('', 12) and value > 0 group by sid, ibes_ticker, estimator having timestamp = max(timestamp)".format(startDateStr, time, endDateStr, time)
-            print sql
+            print(sql)
             df = psql.frame_query(sql, con)
             df['value'] = df['value'].astype(str)
             df = df[ df['value'] != '' ]
@@ -817,7 +818,7 @@ def load_target_hist(uni_df, start, end, intra=False):
             df['value'] = df['value'].astype(float)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             del df['horizon']
-            print df.columns
+            print(df.columns)
             df = pd.merge(uni_df[ uni_df['date'] == date ], df, how='inner', left_on=['sid'], right_on=['sid'], sort=True, suffixes=['', '_dead'])
             df = df.set_index(['date', 'sid'])
             df_list.append(df)
@@ -860,7 +861,7 @@ def load_estimate_hist(uni_df, start, end, estimate):
             minPeriod = str(int(endDateStr[2:4])) + endDateStr[4:6]
             maxPeriod = str(int(endDateStr[2:4]) + 2) + "00"
             sql = "select * from t_ibes_det_snapshot where timestamp between '{} {}' and '{} {}' and measure = '{}' and forecast_period_ind = 1 and forecast_period_end_date > {} and forecast_period_end_date < {} group by sid, ibes_ticker, estimator, forecast_period_ind, forecast_period_end_date having timestamp = max(timestamp) order by sid, forecast_period_end_date;".format(startDateStr, time, endDateStr, time, estimate, minPeriod, maxPeriod)
-            print sql
+            print(sql)
             df = psql.frame_query(sql, con)
             df['value'] = df['value'].astype(str)
             df = df[ df['value'] != '' ]
@@ -868,7 +869,7 @@ def load_estimate_hist(uni_df, start, end, estimate):
             df['date'] = pd.to_datetime( date.strftime("%Y%m%d") )
             df['value'] = df['value'].astype(float)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
-            print df.columns
+            print(df.columns)
             df = pd.merge(uni_df[ uni_df['date'] == date ], df, how='inner', left_on=['sid'], right_on=['sid'], sort=True, suffixes=['', '_dead'])
             df = df[ ~df.duplicated(cols=['date', 'sid', 'estimator']) ]
             df = df.set_index(['date', 'sid'])
@@ -876,8 +877,8 @@ def load_estimate_hist(uni_df, start, end, estimate):
             date += timedelta(days=1)
 
     df = pd.concat(df_list)
-    print "DFEPS"
-    print df
+    print("DFEPS")
+    print(df)
     #consensus
     result_df = df.groupby(level=['date', 'sid']).agg({'value' : [np.mean, np.median, np.std, 'count', np.max, np.min], 'timestamp' : 'last'})
     result_df.columns = result_df.columns.droplevel(0)
@@ -886,8 +887,8 @@ def load_estimate_hist(uni_df, start, end, estimate):
 
     #detailed
     df = df.set_index('estimator', append=True)
-    print "SEAN2"
-    print df.head()
+    print("SEAN2")
+    print(df.head())
     df2 = df['value'].unstack(['estimator', 'sid']).fillna(0).diff().iloc[1:].stack(['sid', 'estimator'])
     df2 = df2[ df2 != 0 ]
     df2 = df2.reset_index('estimator').groupby(level=['date', 'sid']).agg(np.mean)

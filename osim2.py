@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from util import *
 from regress import *
 from loaddata import *
@@ -40,7 +41,7 @@ fcasts = args.fcast.split(",")
 fcast_rets = dict()
 for pair in fcasts:
     fdir, fcast = pair.split(":")
-    print "Loading {} {}".format(fdir, fcast)
+    print("Loading {} {}".format(fdir, fcast))
     forecasts.append(fcast)
     retdf = pd.read_csv("./" + fdir + "/rets.txt", names=['date', 'ret'], sep=" ")
     retdf['date'] = pd.to_datetime(retdf['date'])
@@ -53,7 +54,7 @@ for pair in fcasts:
         if m is None: continue
         d1 = int(m.group(1))
         if d1 < int(args.start) or d1 > int(args.end): continue
-        print "Loading {}".format(ff)
+        print("Loading {}".format(ff))
         flist.append(pd.read_csv(ff, parse_dates=True))
     fcast_trades_df = pd.concat(flist)
     fcast_trades_df['iclose_ts'] = pd.to_datetime(fcast_trades_df['iclose_ts'])
@@ -84,12 +85,12 @@ trades_df['cum_pnl'] = 0
 trades_df['day_pnl'] = 0
 
 if args.fill == "vwap":
-    print "Filling at vwap..."
+    print("Filling at vwap...")
     trades_df['fillprice'] = trades_df['bvwap_b_n']
-    print "Bad count: {}".format( len(trades_df) - len(trades_df[ trades_df['fillprice'] > 0 ]) )
+    print("Bad count: {}".format( len(trades_df) - len(trades_df[ trades_df['fillprice'] > 0 ]) ))
     trades_df.ix[  (trades_df['fillprice'] <= 0) | (trades_df['fillprice'].isnull()), 'fillprice' ] = trades_df['iclose']
 else:
-    print "Filling at mid..."
+    print("Filling at mid...")
     trades_df['fillprice'] = trades_df['iclose']
 
 trades_df.replace([np.inf, -np.inf], np.nan, inplace=True)
@@ -151,7 +152,7 @@ for ts, group_df in trades_df.groupby(level='iclose_ts'):
             except:
                 pass
             weight = 1
-            print "{}: {}".format(fcast, weight)
+            print("{}: {}".format(fcast, weight))
             fcast_weights[fcast] = weight
 
         group_df['traded'] = group_df['traded'] + group_df['traded_' + fcast] * weight
@@ -194,7 +195,7 @@ for ts, group_df in trades_df.groupby(level='iclose_ts'):
         delta = pnl_tot - pnl_last_day_tot
         ret = delta/notional
         daytraded = day_bucket['trd'][dayname]
-        print "{}: {} {} {} {:.4f} {:.2f} {:.2f} {:.2f}".format(ts, notional, pnl_tot, delta, ret, daytraded, daytraded/notional, totslip )
+        print("{}: {} {} {} {:.4f} {:.2f} {:.2f} {:.2f}".format(ts, notional, pnl_tot, delta, ret, daytraded, daytraded/notional, totslip ))
         day_bucket['pnl'][dayname] = delta
         day_bucket['not'][dayname] = notional
         pnl_last_day_tot = pnl_tot
@@ -207,7 +208,7 @@ nots.set_index(keys=['date'], inplace=True)
 pnl_df = pd.DataFrame([ [d,v] for d, v in sorted(day_bucket['pnl'].items()) ], columns=['date', 'pnl'])
 pnl_df.set_index(['date'], inplace=True)
 rets = pd.merge(pnl_df, nots, left_index=True, right_index=True)
-print "Total Pnl: ${:.0f}K".format(rets['pnl'].sum()/1000.0)
+print("Total Pnl: ${:.0f}K".format(rets['pnl'].sum()/1000.0))
 
 rets['day_rets'] = rets['pnl'] / rets['notional']
 rets['day_rets'].replace([np.inf, -np.inf], np.nan, inplace=True)
@@ -218,7 +219,7 @@ mean = rets['day_rets'].mean() * 252
 std = rets['day_rets'].std() * math.sqrt(252)
 
 sharpe =  mean/std
-print "Day mean: {:.4f} std: {:.4f} sharpe: {:.4f} avg Notional: ${:.0f}K".format(mean, std, sharpe, rets['notional'].mean()/1000.0)
+print("Day mean: {:.4f} std: {:.4f} sharpe: {:.4f} avg Notional: ${:.0f}K".format(mean, std, sharpe, rets['notional'].mean()/1000.0))
 
 
 

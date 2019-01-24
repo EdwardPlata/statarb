@@ -1,4 +1,5 @@
 #!/usr/bin/env python 
+from __future__ import print_function
 import logging
 
 from regress import *
@@ -12,15 +13,15 @@ def wavg(group):
     b = group['pbeta']
     d = group['log_ret']
     w = group['mkt_cap_y'] / 1e6
-    print "Mkt return: {} {}".format(group['gdate'], ((d * w).sum() / w.sum()))
+    print("Mkt return: {} {}".format(group['gdate'], ((d * w).sum() / w.sum())))
     res = b * ((d * w).sum() / w.sum())
     return res
 
 def calc_rtg_daily(daily_df, horizon):
-    print "Caculating daily rtg..."
+    print("Caculating daily rtg...")
     result_df = filter_expandable(daily_df)
 
-    print "Calculating rtg0..."
+    print("Calculating rtg0...")
 #    result_df['cum_ret'] = pd.rolling_sum(result_df['log_ret'], 6)
 #    result_df['med_diff'] = result_df['median'].unstack().diff().stack()
 #    result_df['rtg0'] = -1.0 * (result_df['median'] - 3) / ( 1.0 + result_df['std'] )
@@ -28,9 +29,9 @@ def calc_rtg_daily(daily_df, horizon):
 #    result_df['rtg0'] = -1.0 * result_df['med_diff_dk'] * result_df['cum_ret']
 
     result_df['std_diff'] = result_df['rating_std'].unstack().diff().stack()
-    print result_df['rating_diff_mean'].describe()
+    print(result_df['rating_diff_mean'].describe())
     result_df.loc[ (result_df['std_diff'] <= 0) | (result_df['std_diff'].isnull()), 'rating_diff_mean'] = 0
-    print result_df['rating_diff_mean'].describe()
+    print(result_df['rating_diff_mean'].describe())
     result_df['rtg0'] = result_df['rating_diff_mean'] * result_df['rating_diff_mean'] * np.sign(result_df['rating_diff_mean'])
 
 
@@ -57,7 +58,7 @@ def generate_coefs(daily_df, horizon, fitfile=None):
     fits_df.set_index(keys=['indep', 'horizon'], inplace=True)    
 
     coef0 = fits_df.ix['rtg0_ma'].ix[horizon].ix['coef']
-    print "Coef{}: {}".format(0, coef0)
+    print("Coef{}: {}".format(0, coef0))
 
     coef_list = list()
     coef_list.append( { 'name': 'rtg0_ma_coef', 'coef': coef0 } )
@@ -65,7 +66,7 @@ def generate_coefs(daily_df, horizon, fitfile=None):
         weight = (horizon - lag) / float(horizon)
         lagname = 'rtg'+str(lag)+'_ma'
         coef = coef0 * weight
-        print "Running lag {} with weight: {}".format(lag, weight)
+        print("Running lag {} with weight: {}".format(lag, weight))
         coef_list.append( { 'name': 'rtg'+str(lag)+'_ma_coef', 'coef': coef } )
 
     coef_df = pd.DataFrame(coef_list)
@@ -81,13 +82,13 @@ def rtg_alpha(daily_df, horizon, coeffile=None):
 
     for lag in range(0,horizon):
         coef = coef_df.ix[ 'rtg'+str(lag)+'_ma_coef' ]['coef']
-        print "Coef: {}".format(coef)
+        print("Coef: {}".format(coef))
         outsample_daily_df[ 'rtg'+str(lag)+'_ma_coef' ] = coef
-    print outsample_daily_df['rtg'].describe()
+    print(outsample_daily_df['rtg'].describe())
 
     outsample_daily_df[ 'rtg' ] = (outsample_daily_df['rtg0_ma'] * outsample_daily_df['rtg0_ma_coef']).fillna(0) #+ outsample_daily_df['rtg0_ma_intercept']
     for lag in range(1,horizon):
-        print outsample_daily_df['rtg'].describe()
+        print(outsample_daily_df['rtg'].describe())
         outsample_daily_df[ 'rtg'] += (outsample_daily_df['rtg'+str(lag)+'_ma'] * outsample_daily_df['rtg'+str(lag)+'_ma_coef']).fillna(0) #+ outsample_daily_df['rtg'+str(lag)+'_ma_intercept']
     
     return outsample_daily_df
@@ -135,20 +136,20 @@ if __name__=="__main__":
 
     end = datetime.strptime(args.asof, "%Y%m%d")
     if args.fit:
-        print "Fitting..."
+        print("Fitting...")
         coeffile = args.coeffile + "/" + args.asof + ".rtg.csv"
         lookback = timedelta(days=720)    
         start = end - lookback
         uni_df = get_uni(start, end, 30)
     else:
-        print "Not fitting..."
+        print("Not fitting...")
         coeffile = args.coeffile
         lookback = timedelta(days=horizon+5)    
         start = end - lookback
         uni_df = load_live_file(args.inputfile)
         end = datetime.strptime(args.asof + '_' + uni_df['time'].min(), '%Y%m%d_%H:%M:%S')
     
-    print "Running between {} and {}".format(start, end)
+    print("Running between {} and {}".format(start, end))
 
     BARRA_COLS = ['ind1']
     barra_df = load_barra(uni_df, start, end, BARRA_COLS)
@@ -164,8 +165,8 @@ if __name__=="__main__":
     result_df = calc_rtg_forecast(daily_df, horizon, coeffile, args.fit)
 
     if not args.fit:
-        print "Total Alpha Summary"
-        print result_df['rtg'].describe()
+        print("Total Alpha Summary")
+        print(result_df['rtg'].describe())
         dump_prod_alpha(result_df, 'rtg', args.outputfile)
 
 

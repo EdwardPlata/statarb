@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from util import *
 from regress import *
 from loaddata import *
@@ -37,7 +38,7 @@ parser.add_argument("--nonegutil",action="store",dest="nonegutil",default=True)
 parser.add_argument("--daily",action="store",dest="daily",default=False)
 args = parser.parse_args()
 
-print args
+print(args)
 
 mkdir_p("opt")
 
@@ -84,7 +85,7 @@ pnl_df.index.names = ['iclose_ts', 'sid']
 pnl_df['forecast'] = np.nan
 pnl_df['forecast_abs'] = np.nan
 for fcast in forecastargs:
-    print "Loading {}".format(fcast)
+    print("Loading {}".format(fcast))
     fdir, name, mult, weight = fcast.split(":")
     mu_df = load_mus(fdir, name, start, end)
     pnl_df = pd.merge(pnl_df, mu_df, how='left', left_index=True, right_index=True)
@@ -189,14 +190,14 @@ for name, date_group in groups:
 
     if hour >= 16: continue
 
-    print "Looking at {}".format(name)
+    print("Looking at {}".format(name))
     monthname = name.strftime("%Y%m")
     timename = name.strftime("%H%M%S")
     weekdayname = name.weekday()
 
     date_group = date_group[ (date_group['iclose'] > 0) & (date_group['bvolume_d'] > 0) & (date_group['mdvp_y'] > 0) ].sort()
     if len(date_group) == 0:
-        print "No data for {}".format(name)
+        print("No data for {}".format(name))
         continue
 
     date_group = pd.merge(date_group.reset_index(), last_pos.reset_index(), how='outer', left_on=['sid'], right_on=['sid'], suffixes=['', '_last'])
@@ -249,7 +250,7 @@ for name, date_group in groups:
     opt.g_mktcap = date_group['mkt_cap_y'].copy().fillna(0).values
 
 
-    print date_group.xs(testid, level=1)[['forecast', 'min_notional', 'max_notional', 'position_last']]
+    print(date_group.xs(testid, level=1)[['forecast', 'min_notional', 'max_notional', 'position_last']])
 
     find = 0 
     for factor in factors:
