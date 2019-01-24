@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from regress import *
 from loaddata import *
 from util import *
@@ -11,7 +12,7 @@ COMPONENTS = 4
 CORR_LOOKBACK = 20
 
 def calc_pca_daily(daily_df):
-    print "Caculating daily pca..."
+    print("Caculating daily pca...")
     result_df = filter_expandable(daily_df)
 
     demean = lambda x: (x - x.mean())
@@ -43,12 +44,12 @@ def calc_pca_daily(daily_df):
         df = df.replace([np.inf, -np.inf], np.nan)
         df = df.fillna(0)
  #       rets = unstacked_rets_df.xs(dt)
-        print "Average correlation: {} {} {}".format(dt, df.unstack().mean(), df.unstack().std())
+        print("Average correlation: {} {} {}".format(dt, df.unstack().mean(), df.unstack().std()))
         try:
             pcafit =  pca.fit(np.asarray(df))
         except:
             pcafit = lastpcafit
-        print "PCA explained variance {}: {}".format(dt, pcafit.explained_variance_ratio_)
+        print("PCA explained variance {}: {}".format(dt, pcafit.explained_variance_ratio_))
 
 #        pcarets = pca.transform(rets)
 #        pr = np.dot(pcarets, pcafit.components_)

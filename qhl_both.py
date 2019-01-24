@@ -1,14 +1,15 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from regress import *
 from loaddata import *
 from util import *
 
 def calc_qhl_daily(daily_df, horizon):
-    print "Caculating daily qhl..."
+    print("Caculating daily qhl...")
     result_df = filter_expandable(daily_df)
 
-    print "Calculating qhl0..."
+    print("Calculating qhl0...")
     result_df['qhl0'] = result_df['close'] / np.sqrt(result_df['qhigh'] * result_df['qlow'])
     result_df['qhl0_B'] = winsorize_by_date(result_df[ 'qhl0' ])
 
@@ -16,7 +17,7 @@ def calc_qhl_daily(daily_df, horizon):
     indgroups = result_df[['qhl0_B', 'gdate', 'ind1']].groupby(['gdate', 'ind1'], sort=True).transform(demean)
     result_df['qhl0_B_ma'] = indgroups['qhl0_B']
 
-    print "Calulating lags..."
+    print("Calulating lags...")
     for lag in range(1,horizon+1):
         shift_df = result_df.unstack().shift(lag).stack()
         result_df['qhl'+str(lag)+'_B_ma'] = shift_df['qhl0_B_ma']
@@ -24,19 +25,19 @@ def calc_qhl_daily(daily_df, horizon):
     return result_df
 
 def calc_qhl_intra(intra_df):
-    print "Calculating qhl intra..."
+    print("Calculating qhl intra...")
     result_df = filter_expandable(intra_df)
 
-    print "Calulating qhlC..."
+    print("Calulating qhlC...")
     result_df['qhlC'] = result_df['iclose'] / np.sqrt(result_df['qhigh'] * result_df['qlow'])
     result_df['qhlC_B'] = winsorize_by_ts(result_df[ 'qhlC' ])
 
-    print "Calulating qhlC_ma..."
+    print("Calulating qhlC_ma...")
     demean = lambda x: (x - x.mean())
     indgroups = result_df[['qhlC_B', 'giclose_ts', 'ind1']].groupby(['giclose_ts', 'ind1'], sort=True).transform(demean)
     result_df['qhlC_B_ma'] = indgroups['qhlC_B']
     
-    print "Calculated {} values".format(len(result_df['qhlC_B_ma'].dropna()))
+    print("Calculated {} values".format(len(result_df['qhlC_B_ma'].dropna())))
     return result_df
 
 def qhl_fits(daily_df, intra_df, horizon, name, middate=None):
@@ -62,10 +63,10 @@ def qhl_fits(daily_df, intra_df, horizon, name, middate=None):
     
     coef0 = fits_df.ix['qhl0_B_ma'].ix[horizon].ix['coef']
     outsample_intra_df['qhlC_B_ma_coef'] = coef0
-    print "Coef0: {}".format(coef0)
+    print("Coef0: {}".format(coef0))
     for lag in range(1,horizon):
         coef = coef0 - fits_df.ix['qhl0_B_ma'].ix[lag].ix['coef'] 
-        print "Coef{}: {}".format(lag, coef)
+        print("Coef{}: {}".format(lag, coef))
         outsample_intra_df[ 'qhl'+str(lag)+'_B_ma_coef' ] = coef
 
     outsample_intra_df['qhl_b'] = outsample_intra_df['qhlC_B_ma'] * outsample_intra_df['qhlC_B_ma_coef']
@@ -82,12 +83,12 @@ def calc_qhl_forecast(daily_df, intra_df, horizon, middate):
     intra_results_df = merge_intra_data(daily_results_df, intra_results_df)
 
     sector_name = 'Energy'
-    print "Running qhl for sector {}".format(sector_name)
+    print("Running qhl for sector {}".format(sector_name))
     sector_df = daily_results_df[ daily_results_df['sector_name'] == sector_name ]
     sector_intra_results_df = intra_results_df[ intra_results_df['sector_name'] == sector_name ]
     result1_df = qhl_fits(sector_df, sector_intra_results_df, horizon, "in", middate)
 
-    print "Running qhl for not sector {}".format(sector_name)
+    print("Running qhl for not sector {}".format(sector_name))
     sector_df = daily_results_df[ daily_results_df['sector_name'] != sector_name ]
     sector_intra_results_df = intra_results_df[ intra_results_df['sector_name'] != sector_name ]    
     result2_df = qhl_fits(sector_df, sector_intra_results_df, horizon, "ex", middate)    
@@ -118,7 +119,7 @@ if __name__=="__main__":
         intra_df = pd.read_hdf(pname+"_intra.h5", 'table')
         loaded = True
     except:
-        print "Did not load cached data..."
+        print("Did not load cached data...")
 
     if not loaded:
         uni_df = get_uni(start, end, lookback)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from regress import *
 from loaddata import *
 from util import *
@@ -11,7 +12,7 @@ COMPONENTS = 4
 CORR_LOOKBACK = 20
 
 def calc_pca_intra(intra_df):
-    print "Calculating pca intra..."
+    print("Calculating pca intra...")
     result_df = filter_expandable(intra_df)
 
     result_df['iclose_l'] = result_df['iclose'].shift(1)
@@ -39,14 +40,14 @@ def calc_pca_intra(intra_df):
             pcafit =  pca.fit(np.asarray(df))
         except:
             pcafit = lastpcafit
-        print "PCA explained variance {}: {}".format(dt, pcafit.explained_variance_ratio_)
+        print("PCA explained variance {}: {}".format(dt, pcafit.explained_variance_ratio_))
 #        pcarets = pca.transform(rets)
 #        pr = np.dot(pcarets, pcafit.components_)
 #        resids = rets - pr.T.reshape(len(df))
 #        result_df.ix[ grp.index, 'pcaC' ] = resids.values
         lastpcafit = pcafit
 
-    print "Calulating pcaC_ma..."
+    print("Calulating pcaC_ma...")
     result_df['pcaC_B'] = winsorize_by_ts(result_df['pcaC'])
  #   demean = lambda x: (x - x.mean())
 #    dategroups = result_df[['pcaC_B', 'giclose_ts']].groupby(['giclose_ts'], sort=False).transform(demean)

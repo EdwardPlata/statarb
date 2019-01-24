@@ -1,18 +1,19 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from regress import *
 from loaddata import *
 from util import *
 
 def calc_htb_daily(daily_df, horizon):
-    print "Caculating daily htb..."
+    print("Caculating daily htb...")
     result_df = filter_expandable(daily_df)
 
-    print "Calculating htb0..."
+    print("Calculating htb0...")
     result_df['htbC'] = result_df['fee_rate'] 
     result_df['htbC_B'] = winsorize_by_date(result_df[ 'htbC' ])
 
-    print "Calulating lags..."
+    print("Calulating lags...")
     for lag in range(0,horizon+1):
         shift_df = result_df.unstack().shift(lag).stack()
         result_df['htb'+str(lag) + "_B"] = shift_df['htbC_B']
@@ -41,10 +42,10 @@ def htb_fits(daily_df, intra_df, horizon, name, middate=None):
     
     coef0 = fits_df.ix['htb0_B'].ix[horizon].ix['coef']
     outsample_intra_df['htbC_B_coef'] = coef0
-    print "Coef0: {}".format(coef0)
+    print("Coef0: {}".format(coef0))
     for lag in range(1,horizon):
         coef = coef0 - fits_df.ix['htb0_B'].ix[lag].ix['coef'] 
-        print "Coef{}: {}".format(lag, coef)
+        print("Coef{}: {}".format(lag, coef))
         outsample_intra_df[ 'htb'+str(lag)+'_B_coef' ] = coef
 
     outsample_intra_df['htb'] = outsample_intra_df['htbC_B'] * outsample_intra_df['htbC_B_coef']
@@ -88,7 +89,7 @@ if __name__== "__main__":
         intra_df = pd.read_hdf(pname+"_intra.h5", 'table')
         loaded = True
     except:
-        print "Did not load cached data..."
+        print("Did not load cached data...")
 
     if not loaded:
         uni_df = get_uni(start, end, lookback)

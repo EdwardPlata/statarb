@@ -1,14 +1,15 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from regress import *
 from loaddata import *
 from util import *
 
 def calc_mom_daily(daily_df, horizon):
-    print "Caculating daily mom..."
+    print("Caculating daily mom...")
     result_df = filter_expandable(daily_df)
 
-    print "Calculating mom0..."
+    print("Calculating mom0...")
     result_df['mom0'] = pd.rolling_sum(result_df['log_ret'], 20)
 
     demean = lambda x: (x - x.mean())
@@ -35,7 +36,7 @@ def mom_fits(daily_df, horizon, name, middate=None):
     fits_df.set_index(keys=['indep', 'horizon'], inplace=True)    
 
     coef0 = fits_df.ix['mom1_ma'].ix[horizon].ix['coef']
-    print "Coef{}: {}".format(0, coef0)
+    print("Coef{}: {}".format(0, coef0))
     outsample_daily_df[ 'mom1_ma_coef' ] = coef0
 
     outsample_daily_df[ 'mom'] = outsample_daily_df['mom1_ma'] * outsample_daily_df['mom1_ma_coef']
@@ -72,7 +73,7 @@ if __name__=="__main__":
         daily_df = pd.read_hdf(pname+"_daily.h5", 'table')
         loaded = True
     except:
-        print "Did not load cached data..."
+        print("Did not load cached data...")
 
     if not loaded:
         uni_df = get_uni(start, end, lookback)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from regress import *
 from loaddata import *
 from util import *
@@ -12,16 +13,16 @@ def wavg(group):
     b = group['pbeta']
     d = group['log_ret']
     w = group['mkt_cap_y'] / 1e6
-    print "Mkt return: {} {}".format(group['gdate'], ((d * w).sum() / w.sum()))
+    print("Mkt return: {} {}".format(group['gdate'], ((d * w).sum() / w.sum())))
     res = b * ((d * w).sum() / w.sum())
     return res
 
 
 def calc_sal_daily(daily_df, horizon):
-    print "Caculating daily sal..."
+    print("Caculating daily sal...")
     result_df = filter_expandable(daily_df)
 
-    print "Calculating sal0..."    
+    print("Calculating sal0...")    
     halflife = horizon / 2
 #    result_df['dk'] = np.exp( -1.0 * halflife *  (result_df['gdate'] - result_df['last']).astype('timedelta64[D]').astype(int) )
 
@@ -31,7 +32,7 @@ def calc_sal_daily(daily_df, horizon):
 
     result_df['cum_ret'] = pd.rolling_sum(result_df['log_ret'], horizon)
 
-    print result_df[ESTIMATE + '_diff_mean'].describe()
+    print(result_df[ESTIMATE + '_diff_mean'].describe())
     result_df['std_diff'] = result_df[ESTIMATE + '_std'].unstack().diff().stack()
     result_df.loc[ result_df['std_diff'] <= 0, ESTIMATE + '_diff_mean'] = 0
     result_df['sal0'] = result_df[ESTIMATE + '_diff_mean'] / result_df[ESTIMATE + '_median']
@@ -86,13 +87,13 @@ def sal_fits(daily_df, horizon, name, middate=None, intercepts=None):
     fits_df.set_index(keys=['indep', 'horizon'], inplace=True)    
     coef0 = fits_df.ix['sal0_ma'].ix[horizon].ix['coef']
     intercept0 = fits_df.ix['sal0_ma'].ix[horizon].ix['intercept']
-    print "Coef{}: {}".format(0, coef0)               
+    print("Coef{}: {}".format(0, coef0))               
     outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] > 0, 'sal0_ma_coef' ] = coef0
     outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] > 0, 'sal0_ma_intercept' ] =  intercept0
     for lag in range(1,horizon):
         coef = coef0 - fits_df.ix['sal0_ma'].ix[lag].ix['coef'] 
         intercept = intercept0 - fits_df.ix['sal0_ma'].ix[lag].ix['intercept'] 
-        print "Coef{}: {}".format(lag, coef)
+        print("Coef{}: {}".format(lag, coef))
         outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] > 0, 'sal'+str(lag)+'_ma_coef' ] = coef
         outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] > 0, 'sal'+str(lag)+'_ma_intercept' ] = intercept
 
@@ -107,13 +108,13 @@ def sal_fits(daily_df, horizon, name, middate=None, intercepts=None):
     fits_df.set_index(keys=['indep', 'horizon'], inplace=True)    
     coef0 = fits_df.ix['sal0_ma'].ix[horizon].ix['coef']
     intercept0 = fits_df.ix['sal0_ma'].ix[horizon].ix['intercept']
-    print "Coef{}: {}".format(0, coef0)               
+    print("Coef{}: {}".format(0, coef0))               
     outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] <= 0, 'sal0_ma_coef' ] = coef0
     outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] <= 0, 'sal0_ma_intercept' ] =  intercept0
     for lag in range(1,horizon):
         coef = coef0 - fits_df.ix['sal0_ma'].ix[lag].ix['coef'] 
         intercept = intercept0 - fits_df.ix['sal0_ma'].ix[lag].ix['intercept'] 
-        print "Coef{}: {}".format(lag, coef)
+        print("Coef{}: {}".format(lag, coef))
         outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] <= 0, 'sal'+str(lag)+'_ma_coef' ] = coef
         outsample_daily_df.loc[ outsample_daily_df[ESTIMATE + '_diff_mean'] <= 0, 'sal'+str(lag)+'_ma_intercept' ] = intercept
 
@@ -192,7 +193,7 @@ if __name__=="__main__":
         daily_df = pd.read_hdf(pname+"_daily.h5", 'table')
         loaded = True
     except:
-        print "Did not load cached data..."
+        print("Did not load cached data...")
 
     if not loaded:
         uni_df = get_uni(start, end, lookback)

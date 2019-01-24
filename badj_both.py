@@ -1,14 +1,15 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from regress import *
 from loaddata import *
 from util import *
 
 def calc_badj_daily(daily_df, horizon):
-    print "Caculating daily badj..."
+    print("Caculating daily badj...")
     result_df = filter_expandable(daily_df)
 
-    print "Calculating badj0..."
+    print("Calculating badj0...")
     result_df['badj0'] = result_df['log_ret'] / result_df['pbeta'] 
     result_df['badj0_B'] = winsorize_by_date(result_df[ 'badj0' ])
 
@@ -16,7 +17,7 @@ def calc_badj_daily(daily_df, horizon):
     indgroups = result_df[['badj0_B', 'gdate', 'ind1']].groupby(['gdate', 'ind1'], sort=True).transform(demean)
     result_df['badj0_B_ma'] = indgroups['badj0_B']
 
-    print "Calulating lags..."
+    print("Calulating lags...")
     for lag in range(1,horizon+1):
         shift_df = result_df.unstack().shift(lag).stack()
         result_df['badj'+str(lag)+'_B_ma'] = shift_df['badj0_B_ma']
@@ -24,19 +25,19 @@ def calc_badj_daily(daily_df, horizon):
     return result_df
 
 def calc_badj_intra(intra_df):
-    print "Calculating badj intra..."
+    print("Calculating badj intra...")
     result_df = filter_expandable(intra_df)
 
-    print "Calulating badjC..."
+    print("Calulating badjC...")
     result_df['badjC'] = (result_df['overnight_log_ret'] + (np.log(result_df['iclose']/result_df['dopen']))) / result_df['pbeta']
     result_df['badjC_B'] = winsorize_by_ts(result_df[ 'badjC' ])
 
-    print "Calulating badjC_ma..."
+    print("Calulating badjC_ma...")
     demean = lambda x: (x - x.mean())
     indgroups = result_df[['badjC_B', 'giclose_ts', 'ind1']].groupby(['giclose_ts', 'ind1'], sort=True).transform(demean)
     result_df['badjC_B_ma'] = indgroups['badjC_B']
     
-    print "Calculated {} values".format(len(result_df['badjC_B_ma'].dropna()))
+    print("Calculated {} values".format(len(result_df['badjC_B_ma'].dropna())))
     return result_df
 
 def badj_fits(daily_df, intra_df, horizon, name, middate=None):
@@ -62,10 +63,10 @@ def badj_fits(daily_df, intra_df, horizon, name, middate=None):
     
     coef0 = fits_df.ix['badj0_B_ma'].ix[horizon].ix['coef']
     outsample_intra_df[ 'badjC_B_ma_coef' ] = coef0
-    print "Coef0: {}".format(coef0)
+    print("Coef0: {}".format(coef0))
     for lag in range(1,horizon):
         coef = coef0 - fits_df.ix['badj0_B_ma'].ix[lag].ix['coef'] 
-        print "Coef{}: {}".format(lag, coef)
+        print("Coef{}: {}".format(lag, coef))
         outsample_intra_df[ 'badj'+str(lag)+'_B_ma_coef' ] = coef
 
     outsample_intra_df['badj_b'] = outsample_intra_df['badjC_B_ma'] * outsample_intra_df['badjC_B_ma_coef']
@@ -82,12 +83,12 @@ def calc_badj_forecast(daily_df, intra_df, horizon, middate):
     intra_results_df = merge_intra_data(daily_results_df, intra_results_df)
 
     sector_name = 'Energy'
-    print "Running badj for sector {}".format(sector_name)
+    print("Running badj for sector {}".format(sector_name))
     sector_df = daily_results_df[ daily_results_df['sector_name'] == sector_name ]
     sector_intra_results_df = intra_results_df[ intra_results_df['sector_name'] == sector_name ]
     result1_df = badj_fits(sector_df, sector_intra_results_df, horizon, "in", middate)
 
-    print "Running badj for not sector {}".format(sector_name)
+    print("Running badj for not sector {}".format(sector_name))
     sector_df = daily_results_df[ daily_results_df['sector_name'] != sector_name ]
     sector_intra_results_df = intra_results_df[ intra_results_df['sector_name'] != sector_name ]    
     result2_df = badj_fits(sector_df, sector_intra_results_df, horizon, "ex", middate)    
@@ -117,7 +118,7 @@ if __name__=="__main__":
         intra_df = pd.read_hdf(pname+"_intra.h5", 'table')
         loaded = True
     except:
-        print "Did not load cached data..."
+        print("Did not load cached data...")
 
     if not loaded:
         uni_df = get_uni(start, end, lookback)

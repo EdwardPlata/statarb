@@ -1,5 +1,6 @@
 #!/usr/bin/env python 
 
+from __future__ import print_function
 from util import *
 from regress import *
 from loaddata import *
@@ -40,7 +41,7 @@ forecasts = list()
 fcasts = args.fcast.split(",")
 for pair in fcasts:
     fdir, fcast = pair.split(":")
-    print "Loading {} {}".format(fdir, fcast)
+    print("Loading {} {}".format(fdir, fcast))
     forecasts.append(fcast)
     flist = list()
     for ff in sorted(glob.glob( "./" + fdir + "/opt/opt." + fcast + ".*.csv")):
@@ -48,7 +49,7 @@ for pair in fcasts:
         if m is None: continue
         d1 = int(m.group(1))
         if d1 < int(args.start) or d1 > int(args.end): continue
-        print "Loading {}".format(ff)
+        print("Loading {}".format(ff))
         flist.append(pd.read_csv(ff, parse_dates=True))
     fcast_trades_df = pd.concat(flist)
 #    fcast_trades_df = fcast_trades_df[ fcast_trades_df['sid'] == testid]
@@ -85,12 +86,12 @@ trades_df['cum_pnl'] = 0
 trades_df['day_pnl'] = 0
 
 if args.fill == "vwap":
-    print "Filling at vwap..."
+    print("Filling at vwap...")
     trades_df['fillprice'] = trades_df['bvwap_b_n']
-    print "Bad count: {}".format( len(trades_df) - len(trades_df[ trades_df['fillprice'] > 0 ]) )
+    print("Bad count: {}".format( len(trades_df) - len(trades_df[ trades_df['fillprice'] > 0 ]) ))
     trades_df.ix[  (trades_df['fillprice'] <= 0) | (trades_df['fillprice'].isnull()), 'fillprice' ] = trades_df['iclose']
 else:
-    print "Filling at mid..."
+    print("Filling at mid...")
     trades_df['fillprice'] = trades_df['iclose']
 
 trades_df.replace([np.inf, -np.inf], np.nan, inplace=True)
@@ -99,7 +100,7 @@ def objective(weights):
 
     ii = 0
     for fcast in forecasts:
-        print "Weight {}: {}".format(fcast, weights[ii])
+        print("Weight {}: {}".format(fcast, weights[ii]))
         ii += 1
 
     day_bucket = {
@@ -198,7 +199,7 @@ def objective(weights):
             ret = delta/notional
             daytraded = day_bucket['trd'][dayname]
             notional2 = np.sum(np.abs((group_df['close'] * group_df['position'] / group_df['iclose'])))
-            print "{}: {} {} {} {:.4f} {:.2f} {}".format(ts, notional, pnl_tot, delta, ret, daytraded/notional, notional2 )
+            print("{}: {} {} {} {:.4f} {:.2f} {}".format(ts, notional, pnl_tot, delta, ret, daytraded/notional, notional2 ))
             day_bucket['pnl'][dayname] = delta
 #            month_bucket['pnl'][monthname] += delta
 #            dayofweek_bucket['pnl'][weekdayname] += delta
@@ -221,7 +222,7 @@ def objective(weights):
     pnl_df = pd.DataFrame([ [d,v] for d, v in sorted(day_bucket['pnl'].items()) ], columns=['date', 'pnl'])
     pnl_df.set_index(['date'], inplace=True)
     rets = pd.merge(pnl_df, nots, left_index=True, right_index=True)
-    print "Total Pnl: ${:.0f}K".format(rets['pnl'].sum()/1000.0)
+    print("Total Pnl: ${:.0f}K".format(rets['pnl'].sum()/1000.0))
 
     rets['day_rets'] = rets['pnl'] / rets['notional']
     rets['day_rets'].replace([np.inf, -np.inf], np.nan, inplace=True)
@@ -232,10 +233,10 @@ def objective(weights):
     std = rets['day_rets'].std() * math.sqrt(252)
     
     sharpe =  mean/std
-    print "Day mean: {:.4f} std: {:.4f} sharpe: {:.4f} avg Notional: ${:.0f}K".format(mean, std, sharpe, rets['notional'].mean()/1000.0)
+    print("Day mean: {:.4f} std: {:.4f} sharpe: {:.4f} avg Notional: ${:.0f}K".format(mean, std, sharpe, rets['notional'].mean()/1000.0))
     penalty = 0.05 * np.std(weights)
-    print "penalty: {}".format(penalty)
-    print
+    print("penalty: {}".format(penalty))
+    print()
 
     return sharpe - penalty
 
@@ -252,12 +253,12 @@ p.maxFunEvals = 150
 r = p.solve('ralg')
 
 if (r.stopcase == -1 or r.isFeasible == False):
-    print objective_detail(target, *g_params)
+    print(objective_detail(target, *g_params))
     raise Exception("Optimization failed")
 
-print r.xf
+print(r.xf)
 ii = 0
 for fcast in forecasts:
-    print "{}: {}".format(fcast, r.xf[ii])
+    print("{}: {}".format(fcast, r.xf[ii]))
     ii += 1
 
