@@ -1,0 +1,35 @@
+ASE_OBJ_DIR = [ modules.peek : OBJ_DIR ] ;
+
+project /execServer : build-dir $(ASE_OBJ_DIR)/cpp/build/bin.$(TRC_SYSTEM:E=unknown) ;
+
+#local projects = [ MATCH ([^/]*)/.git : [ glob */.git ] ] ;
+local projects = cpputil guillotine-server hyp2-base hyp2-client ntradesys secretcode ;
+local nonessential_project = bartracker guillotine-client saclient ;
+local names ;
+
+  use-project /client-lite : client-lite ;
+  build-project client-lite ;
+  names += /client-lite ;
+
+  use-project /guillotine/message : guillotine-base ;
+  build-project /guillotine/message ;
+  names += /guillotine/message ;
+
+for i in $(projects)
+{
+  if [ glob $(i)/Jam* ] 
+  {
+    local name = /$(i) ;
+
+    use-project $(name) : $(i) ;
+
+    names += $(name) ;
+  }
+}
+
+install export-lib : $(names) : <install-type>LIB $(export-eloc)/lib 
+                   : <variant>deployment ;
+explicit export-lib ;
+
+alias all : $(names) ;
+alias all : [ set.intersection /TraderStump /hyp2-client : $(names) ] : <export>oldinstall ;
